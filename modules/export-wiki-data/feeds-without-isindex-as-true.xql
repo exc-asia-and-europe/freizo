@@ -9,14 +9,15 @@ declare option output:method "html";
 declare option output:media-type "text/html";
 
 let $base-collection-path := xs:anyURI("/db/apps/wiki/data/ethnografische_fotografie")
+let $report-name := "Feeds without is-index as true"
 
 return
     <html>
         <head>
-            <title>{"Collection name: " || $base-collection-path}</title>
+            <title>{$report-name}</title>
         </head>
         <body>
-            <h1>Not referenced resources</h1>
+            <h1>{$report-name}</h1>
             {
                 dbutil:scan-collections($base-collection-path, function($collection-path) {
                     let $resources := (xmldb:get-child-resources($collection-path)[ends-with(., '.atom')] ! doc($collection-path || "/" || .))[.//wiki:is-index]
