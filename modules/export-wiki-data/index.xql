@@ -16,7 +16,10 @@ return
         <body>
             <h1>Wiki Data Reports</h1>
             {
-                xmldb:get-child-resources("/apps/freizo/modules/export-wiki-data")[. != 'index.xql'] ! <p><a href="/exist/rest/db{$module-path || "/" || .}" target="_blank">{.}</a></p>
+                for $resource-name in xmldb:get-child-resources("/apps/freizo/modules/export-wiki-data")[. != 'index.xql']
+                order by $resource-name
+                
+                return <p><a href="/exist/rest/db{$module-path || "/" || $resource-name}" target="_blank">{$resource-name}</a></p>
             }
         </body>
     </html>
