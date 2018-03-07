@@ -9,32 +9,33 @@ declare namespace output = "http://www.w3.org/2010/xslt-xquery-serialization";
 declare namespace html = "http://www.w3.org/1999/xhtml";
 declare namespace vra="http://www.vraweb.org/vracore4.htm";
 
-declare option output:method "html";
-declare option output:media-type "text/html";
-
 declare variable $base-collection-path := xs:anyURI("/apps/wiki/data/");
 declare variable $tmp-collection-path := "/apps/freizo/modules/export-wiki-data/tmp";
 declare variable $images-collection-name := "_images";
 
 declare function local:get-image-by-uuid($image-path-attr) {
-    let $console := console:send('console_window','Hello World!') 
+    let $console := console:send('console','Hello World!') 
     let $image-path-1 := replace($image-path-attr, "http://kjc-sv016.kjc.uni-heidelberg.de:8080/exist/apps/wiki", "/apps/wiki/data")
     let $image-path-2 := replace($image-path-1, "http://kjc-sv016.kjc.uni-heidelberg.de:8080/exist/rest/db", "")
-    let $processed-image-path :=
-        if (contains($image-path-2, 'image-view.xql?uuid='))
+    let $image-path-3 :=
+        if (not(starts-with($image-path-2, "/apps/wiki")))
+        then "/apps/wiki/data" || $image-path-2
+        else $image-path-2
+    let $image-path-4 :=
+        if (contains($image-path-3, 'image-view.xql?uuid='))
         then
-            let $image-uuid := substring-after($image-path-2, "uuid=")
+            let $image-uuid := substring-after($image-path-3, "uuid=")
             let $image-vra := system:as-user("admin", $config:admin-pass, collection("/resources")//vra:image[@id = $image-uuid][1])
             let $image-collection-path := util:collection-name($image-vra)
             let $image-file-name := $image-vra/@href
             
             return $image-collection-path || "/" || $image-file-name
-        else $image-path-2
+        else $image-path-3
         
     return
         map { 
                 "image-path-attr" := $image-path-attr,
-                "image-path" := $processed-image-path
+                "image-path" := $image-path-4
         }        
 };
 
@@ -60,9 +61,7 @@ declare function local:export-feed($feed-path, $target-parent-collection-path) {
             return
                 for $resource-name in $resource-names[not(ends-with(lower-case(.), ('jpg', 'tiff', 'png', 'jpeg', 'tif')))]
                 
-                return (
-                    xmldb:copy($feed-path, $target-collection-path, $resource-name)
-                )
+                return xmldb:copy($feed-path, $target-collection-path, $resource-name)
             ,            
             (: gather the images into the '_images' folder and process the image url-s :)
             let $image-path-maps :=
@@ -85,7 +84,12 @@ declare function local:export-feed($feed-path, $target-parent-collection-path) {
                 
                 return
                     ( 
-                    xmldb:copy($image-collection-path, $images-collection-path, $image-name)
+                    try {
+                        xmldb:copy($image-collection-path, $images-collection-path, $image-name)
+                    }
+                    catch * {
+                        string-join(("Error for feed:", $feed-path, $err:description))
+                    }                    
                     ,
                     $target-image-path-attrs
                     ,
@@ -104,8 +108,8 @@ declare function local:export-feed($feed-path, $target-parent-collection-path) {
                 return
                     if ($collection-name = ('_galleries', '_theme'))
                     then xmldb:copy($feed-path || "/" || $collection-name, $target-collection-path)
-                    else ()
-(:                        local:export-feed($feed-path || "/" || $collection-name, $target-collection-path):)
+                    else
+                        local:export-feed($feed-path || "/" || $collection-name, $target-collection-path)
         )    
 };
 
@@ -115,3 +119,4 @@ return local:export-feed($base-collection-path || $feed-name, $tmp-collection-pa
 
 (:http://kjc-sv016.kjc.uni-heidelberg.de:8080/exist/apps/wiki/ethnografische_fotografie/frau_in_rot.jpg:)
 (:http://kjc-sv016.kjc.uni-heidelberg.de:8080/exist/rest/db/apps/wiki/modules/display/image-view.xql?uuid=i_7e5a8713-f68f-4c84-8e45-6982bc5a7cb0:)
+(: /die_kunst_der_kunstkritik/Cheng_4.jpg:)
