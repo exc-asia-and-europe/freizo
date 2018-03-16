@@ -6,7 +6,9 @@ declare namespace html = "http://www.w3.org/1999/xhtml";
 declare namespace vra="http://www.vraweb.org/vracore4.htm";
 
 declare variable $base-collection-path := xs:anyURI("/apps/wiki/data/");
-declare variable $tmp-collection-path := "/apps/freizo/modules/export-wiki-data/tmp";
+declare variable $tmp-parent-collection-path := "/apps/freizo/modules/export-wiki-data";
+declare variable $tmp-collection-name := "tmp";
+declare variable $tmp-collection-path := $tmp-parent-collection-path || "/" || $tmp-collection-name;
 declare variable $images-collection-name := "_images";
 
 declare function local:resolve-image-url($image-path-attr) {
@@ -26,18 +28,25 @@ declare function local:resolve-image-url($image-path-attr) {
         if (starts-with($image-path-3, "/exist/rest/db"))
         then substring-after($image-path-3, "/exist/rest/db")
         else $image-path-3
-    
-    
-    let $image-path-3 :=
-        if (not(starts-with($image-path-2, "/apps/wiki")))
-        then "/apps/wiki/data" || $image-path-2
-        else $image-path-2        
+    let $image-path-5 :=
+        if (starts-with($image-path-4, 'http://kjc-sv016.kjc.uni-heidelberg.de:8080/exist/apps/tamboti/modules/search/index.html?search-field=ID&amp;value='))
+        then
+            let $vra-work-id := substring-after($image-path-4, 'http://kjc-sv016.kjc.uni-heidelberg.de:8080/exist/apps/tamboti/modules/search/index.html?search-field=ID&amp;value=')
+            let $vra-work := collection("/resources")//vra:work[@id = $vra-work-id]
+            let $image-id := $vra-work//vra:relation[@type = 'imageIs']/@relids
+            
+            return collection("/resources")//vra:image[@id = $image-id]/root()/document-uri(.)
+        else $image-path-4
+    let $image-path-6 :=
+        if (not(starts-with($image-path-5, '/apps/wiki') or starts-with($image-path-5, '/db/resources') or starts-with($image-path-5, 'http')))
+        then "/apps/wiki/data" || $image-path-5
+        else $image-path-5      
         
         
     return
         map { 
                 "image-path-attr" := $image-path-attr,
-                "image-path" := $image-path-4
+                "image-path" := $image-path-6
         }        
 };
 
@@ -92,27 +101,41 @@ declare function local:export-feed($feed-path, $target-parent-collection-path) {
     let $feed-name := replace($feed-path, "^.*/", "")
     let $feed-collection := substring-before($feed-path, $feed-name)
     let $target-collection-path := xs:anyURI($target-parent-collection-path || "/" || $feed-name)
+    let $images-collection-path := $target-collection-path || "/" || $images-collection-name
+    let $resource-names := xmldb:get-child-resources($feed-path)[. != '__contents__.xml']
+    
+    let $create-collections := (
+        if (xmldb:collection-available($target-collection-path))
+        then xmldb:remove($target-collection-path)
+        else ()
+        ,
+        xmldb:create-collection($tmp-parent-collection-path, $tmp-collection-name)            
+        ,
+        xmldb:create-collection($target-parent-collection-path, $feed-name)
+        ,
+        xmldb:create-collection($target-collection-path, $images-collection-name)
+    )
     
     return
         (
-            if (xmldb:collection-available($target-collection-path))
-            then xmldb:remove($target-collection-path)
-            else ()
-            ,
-            xmldb:create-collection($target-parent-collection-path, $feed-name)
-            ,
-            xmldb:create-collection($target-collection-path, $images-collection-name)        
-            ,
             (: copy resources :)
-            let $resource-names := xmldb:get-child-resources($feed-path)[. != '__contents__.xml']
+            for $resource-name in $resource-names[not(ends-with(lower-case(.), ('jpg', 'tiff', 'png', 'jpeg', 'tif')))]
             
-            return
-                for $resource-name in $resource-names[not(ends-with(lower-case(.), ('jpg', 'tiff', 'png', 'jpeg', 'tif')))]
-                
-                return xmldb:copy($feed-path, $target-collection-path, $resource-name)
+            return xmldb:copy($feed-path, $target-collection-path, $resource-name)
             ,            
             (: gather the images into the '_images' folder and process the image url-s :)
             local:copy-images($feed-path, $target-collection-path)
+            ,
+            (: copy the images that are not referenced in articles :)
+            let $gathered-image-names := xmldb:get-child-resources($images-collection-path)
+            
+            return
+                for $resource-name in $resource-names[ends-with(lower-case(.), ('jpg', 'tiff', 'png', 'jpeg', 'tif'))]
+                
+                return
+                    if (count(index-of($gathered-image-names, $resource-name)) = 0)
+                    then xmldb:copy($feed-path, $target-collection-path, $resource-name)
+                    else ()
             ,
             (: process collection :)
             let $collection-names := xmldb:get-child-collections($feed-path)
@@ -128,7 +151,7 @@ declare function local:export-feed($feed-path, $target-parent-collection-path) {
         )    
 };
 
-let $feed-name := "ethnografische_fotografie"
+let $feed-name := "die_kunst_der_kunstkritik"
 
 return local:export-feed($base-collection-path || $feed-name, $tmp-collection-path)
 
