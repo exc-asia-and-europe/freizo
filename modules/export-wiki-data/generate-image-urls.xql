@@ -34,15 +34,11 @@ declare function local:resolve-image-url($image-path-attr) {
     let $image-path-6 :=
         if (not(starts-with($image-path-5, '/apps/wiki') or starts-with($image-path-5, '/db/resources') or starts-with($image-path-5, 'http')))
         then "/apps/wiki/data" || $image-path-5
-        else $image-path-5        
+        else $image-path-5
         
         
     return $image-path-5        
 };
 
-collection("/apps/wiki/data")//html:img/@src ! local:resolve-image-url(.)
+collection("/apps/wiki/data")//html:img/@src ! local:resolve-image-url(.) ! (let $url := . return if (starts-with($url, 'http://iiif.freizo.org')) then $url else ())
     
-(: URL-s to resolve    :)
-(: http://kjc-ws2.kjc.uni-heidelberg.de/images/service/download_uuid/i_63824d4d-73c0-4f9f-8a65-d3b5919864c8 :)
-
-

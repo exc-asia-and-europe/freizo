@@ -52,7 +52,24 @@ declare function local:resolve-image-url($image-path-attr) {
 
 declare function local:copy-image-url($feed-path, $images-collection-path, $image-path) {
     if (starts-with($image-path, 'http'))
-    then ()
+    then
+        let $image-name :=
+            if (starts-with($image-path, 'http://iiif.freizo.org'))
+            then substring-before(substring-after($image-path, 'china_posters/'), '/')
+            else replace($image-path, "^.*/", "")
+        
+        let $response := httpclient:get($image-path, false(), ())
+        let $mime-type := $response/httpclient:body/@mimetype/string()
+        let $processed-mime-type :=
+            if ($mime-type = 'application/octet-stream')
+            then 'image/jpeg'
+            else $mime-type
+        let $image-extension :=
+            if ($mime-type = 'application/octet-stream')
+            then '.jpg'
+            else ''
+        
+        return xmldb:store($images-collection-path, $image-name || $image-extension, xs:base64Binary($response/httpclient:body), $processed-mime-type)        
     else
         let $image-name := util:document-name($image-path)
         let $image-collection-path := util:collection-name($image-path)
@@ -151,10 +168,6 @@ declare function local:export-feed($feed-path, $target-parent-collection-path) {
         )    
 };
 
-let $feed-name := "die_kunst_der_kunstkritik"
+let $feed-name := "disobedient"
 
 return local:export-feed($base-collection-path || $feed-name, $tmp-collection-path)
-
-(:http://kjc-sv016.kjc.uni-heidelberg.de:8080/exist/apps/wiki/ethnografische_fotografie/frau_in_rot.jpg:)
-(:http://kjc-sv016.kjc.uni-heidelberg.de:8080/exist/rest/db/apps/wiki/modules/display/image-view.xql?uuid=i_7e5a8713-f68f-4c84-8e45-6982bc5a7cb0:)
-(: /die_kunst_der_kunstkritik/Cheng_4.jpg:)
