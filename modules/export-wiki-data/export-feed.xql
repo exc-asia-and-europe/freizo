@@ -51,40 +51,41 @@ declare function local:resolve-image-url($image-path-attr) {
 };
 
 declare function local:copy-image-url($feed-path, $images-collection-path, $image-path) {
-    if (starts-with($image-path, 'http'))
-    then
-        let $image-name :=
-            if (starts-with($image-path, 'http://iiif.freizo.org'))
-            then substring-before(substring-after($image-path, 'china_posters/'), '/')
-            else replace($image-path, "^.*/", "")
-        
-        let $response := httpclient:get($image-path, false(), ())
-        let $mime-type := $response/httpclient:body/@mimetype/string()
-        let $processed-mime-type :=
-            if ($mime-type = 'application/octet-stream')
-            then 'image/jpeg'
-            else $mime-type
-        let $image-extension :=
-            if ($mime-type = 'application/octet-stream')
-            then '.jpg'
-            else ''
-        
-        return xmldb:store($images-collection-path, $image-name || $image-extension, xs:base64Binary($response/httpclient:body), $processed-mime-type)        
-    else
-        let $image-name := util:document-name($image-path)
-        let $image-collection-path := util:collection-name($image-path)
-        let $target-image-path := $images-collection-name || "/" || $image-name
-        
-        return (
-            try {
-                xmldb:copy($image-collection-path, $images-collection-path, $image-name)
-            }
-            catch * {
-                string-join(("Error for feed:", $feed-path, $err:description))
-            }
-            ,
-            $target-image-path
-        )
+    try {
+        if (starts-with($image-path, 'http'))
+        then
+            let $image-name :=
+                if (starts-with($image-path, 'http://iiif.freizo.org'))
+                then substring-before(substring-after($image-path, 'china_posters/'), '/')
+                else replace($image-path, "^.*/", "")
+            
+            let $response := httpclient:get($image-path, false(), ())
+            let $mime-type := $response/httpclient:body/@mimetype/string()
+            let $processed-mime-type :=
+                if ($mime-type = 'application/octet-stream')
+                then 'image/jpeg'
+                else $mime-type
+            let $image-extension :=
+                if ($mime-type = 'application/octet-stream')
+                then '.jpg'
+                else ''
+            let $target-image-path := xmldb:store($images-collection-path, $image-name || $image-extension, xs:base64Binary($response/httpclient:body), $processed-mime-type)
+            
+            return $target-image-path
+        else
+            let $image-name := util:document-name($image-path)
+            let $image-source-collection-path := util:collection-name($image-path)
+            let $target-image-path := $images-collection-name || "/" || $image-name
+            
+            return (
+                xmldb:copy($image-source-collection-path, $images-collection-path, $image-name)
+                ,
+                $target-image-path
+            )
+    }
+    catch * {
+        string-join(("Error for feed:", $feed-path, $err:description))
+    }
 };
 
 declare function local:copy-images($feed-path, $target-collection-path) {
@@ -168,6 +169,6 @@ declare function local:export-feed($feed-path, $target-parent-collection-path) {
         )    
 };
 
-let $feed-name := "disobedient"
+let $feed-name := "popular_culture"
 
 return local:export-feed($base-collection-path || $feed-name, $tmp-collection-path)
