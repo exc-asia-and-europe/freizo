@@ -10,6 +10,7 @@ declare variable $tmp-parent-collection-path := "/apps/freizo/modules/export-wik
 declare variable $tmp-collection-name := "tmp";
 declare variable $tmp-collection-path := $tmp-parent-collection-path || "/" || $tmp-collection-name;
 declare variable $images-collection-name := "_images";
+declare variable $image-extensions := ('jpg', 'tiff', 'png', 'jpeg', 'tif');
 
 declare function local:resolve-image-url($image-path-attr) {
     let $image-path-1 := replace($image-path-attr, "http://kjc-sv016.kjc.uni-heidelberg.de:8080/exist/apps/wiki", "/apps/wiki/data")
@@ -50,8 +51,8 @@ declare function local:resolve-image-url($image-path-attr) {
         }        
 };
 
-declare function local:copy-image-url($feed-path, $images-collection-path, $image-path) {
-    try {
+declare function local:copy-image-from-url($feed-path, $images-collection-path, $image-path) {
+    
         if (starts-with($image-path, 'http'))
         then
             let $image-name :=
@@ -73,19 +74,22 @@ declare function local:copy-image-url($feed-path, $images-collection-path, $imag
             
             return $target-image-path
         else
-            let $image-name := util:document-name($image-path)
-            let $image-source-collection-path := util:collection-name($image-path)
-            let $target-image-path := $images-collection-name || "/" || $image-name
             
-            return (
-                xmldb:copy($image-source-collection-path, $images-collection-path, $image-name)
-                ,
-                $target-image-path
-            )
-    }
-    catch * {
-        string-join(("Error for feed:", $feed-path, $err:description))
-    }
+                let $image-name := util:document-name($image-path)
+                let $image-source-collection-path := util:collection-name($image-path)
+                let $target-image-path := $images-collection-name || "/" || $image-name
+                
+                return (
+                    try {
+                    xmldb:copy($image-source-collection-path, $images-collection-path, $image-name)
+                    }
+                    catch * {
+                        error(xs:QName("ERROR"), string-join(("Error for $image-path: ", $image-path, " end $image-path ", $err:description)))
+                    }
+                    ,
+                    $target-image-path
+                )
+
 };
 
 declare function local:copy-images($feed-path, $target-collection-path) {
@@ -93,7 +97,7 @@ declare function local:copy-images($feed-path, $target-collection-path) {
     
     let $image-path-maps :=
         xmldb:get-child-resources($feed-path)[ends-with(., '.html')]
-        ! doc($feed-path || "/" || .)//html:img/@src
+        ! doc($feed-path || "/" || .)//html:img/@src[ends-with(lower-case(.), $image-extensions)]
         ! local:resolve-image-url(.)
     let $target-image-path-attrs := 
         xmldb:get-child-resources($target-collection-path)[ends-with(., '.html')]
@@ -105,7 +109,7 @@ declare function local:copy-images($feed-path, $target-collection-path) {
         let $image-path-attr := map:get($image-path-map, "image-path-attr")
         
         let $target-image-path-attr := $target-image-path-attrs[. = $image-path-attr]        
-        let $target-image-path := local:copy-image-url($feed-path, $images-collection-path, $image-path)
+        let $target-image-path := local:copy-image-from-url($feed-path, $images-collection-path, $image-path)
         
         return
             (
@@ -137,10 +141,15 @@ declare function local:export-feed($feed-path, $target-parent-collection-path) {
     return
         (
             (: copy resources :)
-            for $resource-name in $resource-names[not(ends-with(lower-case(.), ('jpg', 'tiff', 'png', 'jpeg', 'tif')))]
+            for $resource-name in $resource-names[not(ends-with(lower-case(.), $image-extensions))]
             
             return xmldb:copy($feed-path, $target-collection-path, $resource-name)
-            ,            
+            ,
+            (: add html:a/@target :)
+            for $element in collection($target-collection-path)//html:a[ends-with(lower-case(@src), $image-extensions)]
+            
+            return update insert attribute target {'_new'} into $element
+            ,
             (: gather the images into the '_images' folder and process the image url-s :)
             local:copy-images($feed-path, $target-collection-path)
             ,
@@ -148,7 +157,7 @@ declare function local:export-feed($feed-path, $target-parent-collection-path) {
             let $gathered-image-names := xmldb:get-child-resources($images-collection-path)
             
             return
-                for $resource-name in $resource-names[ends-with(lower-case(.), ('jpg', 'tiff', 'png', 'jpeg', 'tif'))]
+                for $resource-name in $resource-names[ends-with(lower-case(.), $image-extensions)]
                 
                 return
                     if (count(index-of($gathered-image-names, $resource-name)) = 0)
@@ -169,6 +178,7 @@ declare function local:export-feed($feed-path, $target-parent-collection-path) {
         )    
 };
 
-let $feed-name := "popular_culture"
+let $feed-name := "disobedient"
+let $login := xmldb:login("/db", "admin", "Wars4Spass2$s")
 
 return local:export-feed($base-collection-path || $feed-name, $tmp-collection-path)
