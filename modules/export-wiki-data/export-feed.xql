@@ -80,7 +80,8 @@ declare function local:copy-image-from-url($feed-path, $images-collection-path, 
                     return $target-image-path
                 else $image-path
         else
-            
+            if (util:binary-doc-available($image-path))
+            then
                 let $image-name := util:document-name($image-path)
                 let $image-source-collection-path := util:collection-name($image-path)
                 let $target-image-path := $images-collection-name || "/" || $image-name
@@ -90,6 +91,7 @@ declare function local:copy-image-from-url($feed-path, $images-collection-path, 
                     ,
                     $target-image-path
                 )
+            else $image-path
     }
     catch * {
         error(xs:QName("ERROR"), string-join(("Error for feed: ", $feed-path, ", with $image-path ", $image-path, " ", $err:description)))
