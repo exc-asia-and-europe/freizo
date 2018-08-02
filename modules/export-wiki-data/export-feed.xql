@@ -7,7 +7,7 @@ declare namespace vra="http://www.vraweb.org/vracore4.htm";
 
 declare variable $base-collection-path := xs:anyURI("/apps/wiki/data/");
 declare variable $tmp-parent-collection-path := "/apps/freizo/modules/export-wiki-data";
-declare variable $tmp-collection-name := "tmp";
+declare variable $tmp-collection-name := "exported-feeds";
 declare variable $tmp-collection-path := $tmp-parent-collection-path || "/" || $tmp-collection-name;
 declare variable $images-collection-name := "_images";
 declare variable $image-extensions := ('jpg', 'tiff', 'png', 'jpeg', 'tif');
@@ -156,6 +156,9 @@ declare function local:export-feed($feed-path, $target-parent-collection-path) {
             
             return update insert attribute target {'_new'} into $element
             ,
+            (: copy index.xql :)
+            xmldb:copy($tmp-parent-collection-path, $target-collection-path, "index.xql")
+            ,
             (: gather the images into the '_images' folder and process the image url-s :)
             local:copy-images($feed-path, $target-collection-path)
             ,
@@ -185,6 +188,6 @@ declare function local:export-feed($feed-path, $target-parent-collection-path) {
 };
 
 let $feed-name := "popular_culture"
-let $login := xmldb:login("/db", "admin", "Wars4Spass2$s")
+let $login := xmldb:login("/db", "admin", "")
 
 return local:export-feed($base-collection-path || $feed-name, $tmp-collection-path)
