@@ -52,7 +52,7 @@ declare function local:resolve-image-url($image-path-attr) {
 };
 
 declare function local:copy-image-from-url($feed-path, $images-collection-path, $image-path) {
-    
+    try {
         if (starts-with($image-path, 'http'))
         then
             let $image-name :=
@@ -61,18 +61,24 @@ declare function local:copy-image-from-url($feed-path, $images-collection-path, 
                 else replace($image-path, "^.*/", "")
             
             let $response := httpclient:get($image-path, false(), ())
-            let $mime-type := $response/httpclient:body/@mimetype/string()
-            let $processed-mime-type :=
-                if ($mime-type = 'application/octet-stream')
-                then 'image/jpeg'
-                else $mime-type
-            let $image-extension :=
-                if ($mime-type = 'application/octet-stream')
-                then '.jpg'
-                else ''
-            let $target-image-path := xmldb:store($images-collection-path, $image-name || $image-extension, xs:base64Binary($response/httpclient:body), $processed-mime-type)
+            let $statusCode := $response/@statusCode
             
-            return $target-image-path
+            return
+                if ($statusCode = '200')
+                then
+                    let $mime-type := $response/httpclient:body/@mimetype/string()
+                    let $processed-mime-type :=
+                        if ($mime-type = 'application/octet-stream')
+                        then 'image/jpeg'
+                        else $mime-type
+                    let $image-extension :=
+                        if ($mime-type = 'application/octet-stream')
+                        then '.jpg'
+                        else ''
+                    let $target-image-path := xmldb:store($images-collection-path, $image-name || $image-extension, xs:base64Binary($response/httpclient:body), $processed-mime-type)
+                    
+                    return $target-image-path
+                else $image-path
         else
             
                 let $image-name := util:document-name($image-path)
@@ -80,16 +86,14 @@ declare function local:copy-image-from-url($feed-path, $images-collection-path, 
                 let $target-image-path := $images-collection-name || "/" || $image-name
                 
                 return (
-                    try {
                     xmldb:copy($image-source-collection-path, $images-collection-path, $image-name)
-                    }
-                    catch * {
-                        error(xs:QName("ERROR"), string-join(("Error for $image-path: ", $image-path, " end $image-path ", $err:description)))
-                    }
                     ,
                     $target-image-path
                 )
-
+    }
+    catch * {
+        error(xs:QName("ERROR"), string-join(("Error for feed: ", $feed-path, ", with $image-path ", $image-path, " ", $err:description)))
+    }
 };
 
 declare function local:copy-images($feed-path, $target-collection-path) {
@@ -178,7 +182,7 @@ declare function local:export-feed($feed-path, $target-parent-collection-path) {
         )    
 };
 
-let $feed-name := "disobedient"
+let $feed-name := "popular_culture"
 let $login := xmldb:login("/db", "admin", "Wars4Spass2$s")
 
 return local:export-feed($base-collection-path || $feed-name, $tmp-collection-path)
