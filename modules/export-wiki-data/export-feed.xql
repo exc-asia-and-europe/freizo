@@ -151,10 +151,23 @@ declare function local:export-feed($feed-path, $target-parent-collection-path) {
             
             return xmldb:copy($feed-path, $target-collection-path, $resource-name)
             ,
-            (: add html:a/@target :)
-            for $element in collection($target-collection-path)//html:a[ends-with(lower-case(@src), $image-extensions)]
+            (: process html:a elements :)
+            for $resource-name in $resource-names[ends-with(lower-case(.), '.html')]
+            let $elements := doc($target-collection-path || "/" || $resource-name)//html:a[@href]
             
-            return update insert attribute target {'_new'} into $element
+            return
+                for $element in $elements
+                let $href-attr := $element/@href
+                let $href-1 :=
+                    if (starts-with($href-attr, '/exist/apps/wiki'))
+                    then replace($href-attr, '/exist/apps/wiki/', '/exist/apps/wiki/data/') || '.html'
+                    else $href-attr
+                
+                return ( 
+                    update value $href-attr with $href-1
+                    ,
+                    update insert attribute target {'_new'} into $element
+                )
             ,
             (: copy index.xql :)
             xmldb:copy($tmp-parent-collection-path, $target-collection-path, "index.xql")
@@ -187,7 +200,11 @@ declare function local:export-feed($feed-path, $target-parent-collection-path) {
         )    
 };
 
-let $feed-name := "popular_culture"
-let $login := xmldb:login("/db", "admin", "")
+(: let $feed-names := ("die_kunst_der_kunstkritik", "disobedient", "ethnografische_fotografie", "globalheroes", "materialvisualculture", "MethodinVMA", "photocultures", "popular_culture") :)
+let $feed-names := ("materialvisualculture")
+let $login := xmldb:login("/db", "admin", "Wars4Spass2$s")
 
-return local:export-feed($base-collection-path || $feed-name, $tmp-collection-path)
+return 
+    for $feed-name in $feed-names
+    
+    return local:export-feed($base-collection-path || $feed-name, $tmp-collection-path)
