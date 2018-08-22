@@ -9,9 +9,20 @@ declare namespace atom="http://www.w3.org/2005/Atom";
 declare option output:method "html";
 declare option output:media-type "text/html";
 
-let $base-collection-path := xs:anyURI("/db/apps/wiki/data")
-let $report-name := "Duplicated slideshows"
+declare function local:display-gallery-metadata($gallery-uri, $gallery-id) {
+    <div>
+        <p><a href="/exist/rest{$gallery-uri}" target="_new">{$gallery-uri}</a> (articles referring this slideshow: {local:display-article-metadata($gallery-id)})</p>
+    </div>
+};
 
+declare function local:display-article-metadata($gallery-id) {
+    collection($base-collection-path)//html:div[@id = $gallery-id]/root()/document-uri(.) ! (let $article-uri := . return <a href="/exist/rest{$article-uri}" target="_new">{$article-uri}</a>)
+};
+
+declare variable $base-collection-path := xs:anyURI("/db/apps/wiki/data");
+
+let $report-name := "Duplicated slideshows"
+let $login := xmldb:login("/db", "admin", "")
 
 return
     <html>
@@ -31,13 +42,13 @@ return
                             
                             return
                                 for $duplicated-id in $duplicated-ids
-                                let $slideshows := collection($base-collection-path)//atom:feed[atom:id = $duplicated-id]/root()/document-uri(.) ! (let $href := . return <p><a href="/exist/rest{$href}" target="_new">{$href}</a></p>)
+                                let $slideshows := collection($base-collection-path)//atom:feed[atom:id = $duplicated-id]/root()/document-uri(.) ! local:display-gallery-metadata(., $duplicated-id)
                                 
                                 return 
                                     <div>
                                         <h3>{$duplicated-id}</h3>
-                                        <div>Slideshows with duplicated ids: {$slideshows}</div>
-                                        <div>Articles referencing with duplicated ids: {$slideshows}</div>
+                                        <p>Slideshows with this id</p>
+                                        {$slideshows}
                                     </div>
                         else ()
                     }) 
