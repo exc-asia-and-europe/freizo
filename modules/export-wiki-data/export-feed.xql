@@ -4,6 +4,7 @@ import module namespace config = "http://exist-db.org/xquery/apps/config" at "/a
 
 declare namespace html = "http://www.w3.org/1999/xhtml";
 declare namespace vra="http://www.vraweb.org/vracore4.htm";
+declare namespace atom="http://www.w3.org/2005/Atom";
 
 declare variable $base-collection-path := xs:anyURI("/apps/wiki/data/");
 declare variable $tmp-parent-collection-path := "/apps/freizo/modules/export-wiki-data";
@@ -168,6 +169,31 @@ declare function local:export-feed($feed-path, $target-parent-collection-path) {
                     ,
                     update insert attribute target {'_new'} into $element
                 )
+            ,
+            (: process gallery placeholders :)
+            for $resource-name in $resource-names[ends-with(lower-case(.), '.html')]
+            let $gallery-elements := doc($target-collection-path || "/" || $resource-name)//html:div[contains(@class, 'gallery-placeholder')]
+            
+            return
+                for $gallery-element in $gallery-elements
+                let $gallery-id := $gallery-element/@id
+                let $gallery := collection($base-collection-path)//atom:feed[atom:id = $gallery-id][1]
+                let $gallery-images :=
+                    <html:div class="gallery">
+                        {
+                            for $entry in $gallery/atom:entry
+                            let $image-caption := $entry/atom:title
+                            let $image-url := $entry/atom:link/@href
+                            
+                            return
+                                <html:figure>
+                                    <html:img src="{$image-url}" />
+                                    <html:figcaption>{$image-caption/string()}</html:figcaption>
+                                </html:figure>
+                        }
+                    </html:div>
+                
+                return update replace $gallery-element with $gallery-images
             ,
             (: copy index.xql :)
             xmldb:copy($tmp-parent-collection-path, $target-collection-path, "index.xql")

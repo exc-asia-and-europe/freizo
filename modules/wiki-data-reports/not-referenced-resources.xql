@@ -19,7 +19,7 @@ return
             <h1>{$report-name}</h1>
             {
                 dbutil:scan-collections($base-collection-path, function($collection-path) {
-                    let $referencing-resources := xmldb:get-child-resources($collection-path)[not(. = '__contents__.xml')]
+                    let $referencing-resources := xmldb:get-child-resources($collection-path)[not(. = ('__contents__.xml', '_nav.html'))]
                     let $references :=
                         for $resource-name in $referencing-resources[ends-with(., '.atom')]
                         
