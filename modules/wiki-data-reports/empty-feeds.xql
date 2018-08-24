@@ -22,12 +22,15 @@ return
             <h2>Base collection: {$base-collection-path}</h2>
             {
                 dbutil:scan-collections(xs:anyURI($base-collection-path), function($collection-path) {
-                    let $resources := xmldb:get-child-resources($collection-path)[. != '__contents__.xml']
-                    
-                    return
-                        if (count($resources) = 0)
-                        then <p><a href="http://kjc-sv016.kjc.uni-heidelberg.de:8080/exist/rest{$collection-path}" target="_blank">{$collection-path}</a></p>
-                        else ()
+                    if (contains($collection-path, '/_theme/'))
+                    then ()
+                    else
+                        let $resources := xmldb:get-child-resources($collection-path)[. != '__contents__.xml']
+                        
+                        return
+                            if (count($resources) = 0)
+                            then <p><a href="http://kjc-sv016.kjc.uni-heidelberg.de:8080/exist/rest{$collection-path}" target="_blank">{$collection-path}</a></p>
+                            else ()                        
                 })                 
             }
         </body>
