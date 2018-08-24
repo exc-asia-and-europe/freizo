@@ -26,9 +26,10 @@ return
                     then ()
                     else
                         let $resources := xmldb:get-child-resources($collection-path)[. != '__contents__.xml']
+                        let $sub-feeds := xmldb:get-child-collections($collection-path)
                         
                         return
-                            if (count($resources) = 0)
+                            if (count($resources) = 0 and count($sub-feeds) = 0)
                             then <p><a href="http://kjc-sv016.kjc.uni-heidelberg.de:8080/exist/rest{$collection-path}" target="_blank">{$collection-path}</a></p>
                             else ()                        
                 })                 
