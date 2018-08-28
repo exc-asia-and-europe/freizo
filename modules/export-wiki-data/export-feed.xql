@@ -157,7 +157,7 @@ declare function local:export-feed($feed-path, $target-parent-collection-path) {
             for $resource-name in $resource-names[ends-with(lower-case(.), '.html')]
             let $title := $atom-files[atom:content/@src = $resource-name]/atom:title
             
-            return update insert <html:h1>{$title/string()}</html:h1> preceding doc($target-collection-path || "/" || $resource-name)/element()/element()[1]
+            return update insert <html:h1>{$title/string()}</html:h1> preceding doc($target-collection-path || "/" || $resource-name)/element()/(element(), text())[1]
             ,
             (: process html:a elements :)
             for $resource-name in $resource-names[ends-with(lower-case(.), '.html')]
