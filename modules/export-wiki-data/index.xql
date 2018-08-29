@@ -33,7 +33,7 @@ declare function local:render-feed($feed-url) {
                                     let $article-title := $atom-child-resource/atom:title/string()
                                     let $article-url := $atom-child-resource/atom:content/@src/string()
                                     
-                                    return <li>{$article-title} - <a href="{$feed-collection-url || "/" || $article-url}" target="_blank">{$article-url}</a></li>
+                                    return <li>{$article-title} - <a href="/exist/rest{$feed-collection-url || $article-url}" target="_blank">{$article-url}</a></li>
                                     ,
                                     let $referenced-html-resources := $atom-child-resources/atom:content/@src/string()
                                     let $html-resources := $child-resources[ends-with(., '.html')]
@@ -44,7 +44,7 @@ declare function local:render-feed($feed-url) {
                                         return
                                             if ($html-resource = $referenced-html-resources)
                                             then ""
-                                            else <li>Error: unreferenced HTML - <a href="{$feed-collection-url || "/" || $html-resource}" target="_blank">{$html-resource}</a></li>
+                                            else <li>Error: unreferenced HTML - <a href="/exist/rest{$feed-collection-url || $html-resource}" target="_blank">{$html-resource}</a></li>
                                 )}
                             </ul>
                         else ""
