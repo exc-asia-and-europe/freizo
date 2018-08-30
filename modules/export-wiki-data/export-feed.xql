@@ -132,7 +132,7 @@ declare function local:export-feed($feed-path, $target-parent-collection-path) {
     let $target-collection-path := xs:anyURI($target-parent-collection-path || "/" || $feed-name)
     let $images-collection-path := $target-collection-path || "/" || $images-collection-name
     let $resource-names := xmldb:get-child-resources($feed-path)[. != '__contents__.xml']
-    let $atom-files := $resource-names[ends-with(lower-case(.), '.atom')] ! doc($target-collection-path || "/" || .)//atom:entry
+    let $atom-files := $resource-names[ends-with(lower-case(.), '.atom')] ! doc($feed-path || "/" || .)/atom:entry
     
     let $create-collections := (
         if (xmldb:collection-available($target-collection-path))
@@ -155,9 +155,9 @@ declare function local:export-feed($feed-path, $target-parent-collection-path) {
             ,
             (: add titles to articles :)
             for $resource-name in $resource-names[ends-with(lower-case(.), '.html')]
-            let $title := $atom-files[atom:content/@src = $resource-name]/atom:title
+            let $title := $atom-files[.//atom:content/@src = $resource-name]/atom:title/string(.)
             
-            return update insert <html:h1>{$title/string()}</html:h1> preceding doc($target-collection-path || "/" || $resource-name)/element()/(element(), text())[1]
+            return update insert <html:h1>{$title}</html:h1> preceding doc($target-collection-path || "/" || $resource-name)/*/(element(), text())[1]
             ,
             (: process html:a elements :)
             for $resource-name in $resource-names[ends-with(lower-case(.), '.html')]
@@ -234,7 +234,7 @@ declare function local:export-feed($feed-path, $target-parent-collection-path) {
 };
 
 (: let $feed-names := ("die_kunst_der_kunstkritik", "disobedient", "ethnografische_fotografie", "globalheroes", "materialvisualculture", "MethodinVMA", "photocultures", "popular_culture") :)
-let $feed-names := ("die_kunst_der_kunstkritik")
+let $feed-names := ("disobedient")
 let $login := xmldb:login("/db", "admin", "")
 
 return 
