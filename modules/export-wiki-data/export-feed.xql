@@ -193,8 +193,8 @@ declare function local:export-feed($feed-path, $target-parent-collection-path) {
                             let $image-url := $entry/atom:link/@href
                             
                             return
-                                <html:figure>
-                                    <html:img src="{$image-url}" />
+                                <html:figure style="max-width:60%;">
+                                    <html:img style="max-width:100%;" src="{$image-url}" />
                                     <html:figcaption>{$image-caption/string()}</html:figcaption>
                                 </html:figure>
                         }
@@ -235,7 +235,7 @@ declare function local:export-feed($feed-path, $target-parent-collection-path) {
 
 (: let $feed-names := ("die_kunst_der_kunstkritik", "disobedient", "ethnografische_fotografie", "globalheroes", "materialvisualculture", "MethodinVMA", "photocultures", "popular_culture") :)
 let $feed-names := ("disobedient")
-let $login := xmldb:login("/db", "admin", "")
+let $login := xmldb:login("/db", "admin", "Wars4Spass2$s")
 
 return 
     for $feed-name in $feed-names
