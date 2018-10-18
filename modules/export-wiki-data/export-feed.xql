@@ -189,13 +189,14 @@ declare function local:export-feed($feed-path, $target-parent-collection-path) {
                     <html:div class="gallery">
                         {
                             for $entry in $gallery/atom:entry
-                            let $image-caption := $entry/atom:title
                             let $image-url := $entry/atom:link/@href
+                            let $content-id := $entry/atom:content/@src
+                            let $content-title := collection($base-collection-path)//atom:entry[atom:id = $content-id]/atom:title/text()
                             
                             return
                                 <html:figure style="max-width:60%;">
                                     <html:img style="max-width:100%;" src="{$image-url}" />
-                                    <html:figcaption>{$image-caption/string()}</html:figcaption>
+                                    <html:figcaption>{$content-title}</html:figcaption>
                                 </html:figure>
                         }
                     </html:div>
@@ -235,7 +236,7 @@ declare function local:export-feed($feed-path, $target-parent-collection-path) {
 
 (: let $feed-names := ("die_kunst_der_kunstkritik", "disobedient", "ethnografische_fotografie", "globalheroes", "materialvisualculture", "MethodinVMA", "photocultures", "popular_culture") :)
 let $feed-names := ("disobedient")
-let $login := xmldb:login("/db", "admin", "Wars4Spass2$s")
+let $login := xmldb:login("/db", "admin", "")
 
 return 
     for $feed-name in $feed-names
