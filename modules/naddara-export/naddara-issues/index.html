@@ -1,0 +1,38 @@
+<html xmlns="http://www.w3.org/1999/xhtml">
+    <head>
+        <title>AuthCheck</title>
+        <meta charset="utf-8"/>
+        <link rel="stylesheet" href="https://cdn.datatables.net/1.10.19/css/jquery.dataTables.min.css"/>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Ladda/1.0.6/ladda.min.css"/>
+        <link rel="stylesheet" href="modules/home/authcheck.css"/>
+    </head>
+    <body>
+        <input id="fileupload" type="file" name="file" data-url="modules/check-ids/check-ids.xql" accept=".csv"/>
+        <table id="table" class="display nowrap" style="width:100%">
+            <thead>
+                <tr>
+                    <th>Agent Name ID</th>
+                    <th>Agent Name</th>
+                    <th>Authority Files check result</th>
+                </tr>
+            </thead>
+            <tfoot>
+                <tr>
+                    <th>Agent Name ID</th>
+                    <th>Agent Name</th>
+                    <th>Authority Files check result</th>
+                </tr>
+            </tfoot>            
+        </table>
+        <script src="https://code.jquery.com/jquery-3.3.1.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous">/**/</script>
+        <script src="https://cdn.datatables.net/1.10.19/js/jquery.dataTables.min.js">/**/</script>
+        <script src="https://cdn.datatables.net/buttons/1.5.2/js/dataTables.buttons.min.js">/**/</script>
+        <script src="https://cdn.datatables.net/buttons/1.5.2/js/buttons.html5.min.js">/**/</script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/blueimp-file-upload/9.22.0/js/vendor/jquery.ui.widget.min.js">/**/</script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.iframe-transport/1.0.1/jquery.iframe-transport.min.js">/**/</script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/blueimp-file-upload/9.22.0/js/jquery.fileupload.min.js">/**/</script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/Ladda/1.0.6/spin.min.js">/**/</script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/Ladda/1.0.6/ladda.min.js">/**/</script>
+        <script src="modules/home/authcheck.js">/**/</script>            
+    </body>
+</html>
