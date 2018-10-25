@@ -7,7 +7,7 @@ declare namespace xlink = "http://www.w3.org/1999/xlink";
 declare option output:method "text";
 declare option output:media-type "text/javascript";
 
-let $issues := collection("/resources/commons/Abou_Naddara/")//mods:mods[mods:relatedItem/@type = 'series']
+let $issues := collection("/resources/commons/Abou_Naddara/")//mods:mods[mods:relatedItem/@type = 'series' and mods:physicalDescription/mods:extent[@unit = 'pages']]
 
 
 return
