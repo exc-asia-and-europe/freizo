@@ -1,21 +1,6 @@
 AuthCheck = {};
 
 $(document).ready(function() {
-    var buttonCommon = {
-        text: "CSV",
-        exportOptions: {
-            format: {
-                body: function (data, row, column, node) {
-                    if (column === 0 || column === 2) {
-                        return $(node).text();
-                    } else {
-                        return data;
-                    }
-                }
-            }
-        }
-    };    
-                                
     AuthCheck.table = 
     $("#table").DataTable({
         "dom": '<"top"Bipf>rt<"bottom"lp><"clear">',
@@ -38,9 +23,7 @@ $(document).ready(function() {
         "colReorder": true,
         "stateSave": true,
         "buttons": [
-            $.extend(true, {}, buttonCommon, {
-                extend: 'csvHtml5'
-            })
+            "csvHtml5"
         ]            
     })
     .on('page.dt', function() {
