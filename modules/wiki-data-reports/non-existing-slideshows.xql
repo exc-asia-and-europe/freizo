@@ -1,4 +1,4 @@
-xquery version "3.0";
+xquery version "3.1";
 
 import module namespace dbutil = "http://exist-db.org/xquery/dbutil";
 
@@ -39,7 +39,7 @@ return
                             then
                                 let $resource-path := $reference/root()/document-uri(.)
                                 
-                                return <p><a href="http://kjc-sv016.kjc.uni-heidelberg.de:8080/exist/rest{$resource-path}" target="_blank">{$reference/string()}</a></p>
+                                return <p><a href="http://kjc-sv036.kjc.uni-heidelberg.de:8080/exist/rest{$resource-path}" target="_blank">{$reference/string()}</a></p>
                             else ()
                 })                  
             }

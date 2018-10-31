@@ -13,7 +13,7 @@ $(document).ready(function() {
         {
             "render": function (data, type, row, meta) {
                 if (data) {
-                    return '<a href="http://kjc-sv016.kjc.uni-heidelberg.de:8080/exist/apps/tamboti/modules/search/index.html?search-field=ID&amp;value=' + data + '" target="_blank">' + data + '</a>';
+                    return '<a href="http://kjc-sv036.kjc.uni-heidelberg.de:8080/exist/apps/tamboti/modules/search/index.html?search-field=ID&amp;value=' + data + '" target="_blank">' + data + '</a>';
                 } else {
                     return data;
                 }

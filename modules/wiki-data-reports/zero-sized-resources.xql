@@ -1,4 +1,4 @@
-xquery version "3.0";
+xquery version "3.1";
 
 import module namespace dbutil = "http://exist-db.org/xquery/dbutil";
 
@@ -45,7 +45,7 @@ return
                                     else $resource-path
                                     ,
                                     if ($resource-size = 0)
-                                    then <p><a href="http://kjc-sv016.kjc.uni-heidelberg.de:8080/exist/rest{$resource-path}" target="_blank">{string-join(($resource-path, $resource-size), ", size = ")}</a></p>
+                                    then <p><a href="http://kjc-sv036.kjc.uni-heidelberg.de:8080/exist/rest{$resource-path}" target="_blank">{string-join(($resource-path, $resource-size), ", size = ")}</a></p>
                                     else ()
                                 )
                             else()

@@ -1,4 +1,4 @@
-xquery version "3.0";
+xquery version "3.1";
 
 import module namespace dbutil = "http://exist-db.org/xquery/dbutil";
 
@@ -26,7 +26,7 @@ return
                     return
                         if ($is-index-true)
                         then ()
-                        else $resources ! ./root()/document-uri(.) ! <p><a href="http://kjc-sv016.kjc.uni-heidelberg.de:8080/exist/rest{.}" target="_blank">{.}</a></p>
+                        else $resources ! ./root()/document-uri(.) ! <p><a href="http://kjc-sv036.kjc.uni-heidelberg.de:8080/exist/rest{.}" target="_blank">{.}</a></p>
                 })                  
             }
         </body>
