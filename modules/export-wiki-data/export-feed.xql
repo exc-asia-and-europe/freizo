@@ -1,4 +1,4 @@
-xquery version "3.1";
+xquery version "3.0";
 
 import module namespace config = "http://exist-db.org/xquery/apps/config" at "/apps/wiki/modules/config.xqm";
 
@@ -14,8 +14,8 @@ declare variable $images-collection-name := "_images";
 declare variable $image-extensions := ('jpg', 'tiff', 'png', 'jpeg', 'tif');
 
 declare function local:resolve-image-url($image-path-attr) {
-    let $image-path-1 := replace($image-path-attr, "http://kjc-sv036.kjc.uni-heidelberg.de:8080/exist/apps/wiki", "/apps/wiki/data")
-    let $image-path-2 := replace($image-path-1, "http://kjc-sv036.kjc.uni-heidelberg.de:8080/exist/rest/db", "")
+    let $image-path-1 := replace($image-path-attr, "http://kjc-sv016.kjc.uni-heidelberg.de:8080/exist/apps/wiki", "/apps/wiki/data")
+    let $image-path-2 := replace($image-path-1, "http://kjc-sv016.kjc.uni-heidelberg.de:8080/exist/rest/db", "")
     let $image-path-3 :=
         if (contains($image-path-2, 'image-view.xql?uuid='))
         then
@@ -31,9 +31,9 @@ declare function local:resolve-image-url($image-path-attr) {
         then substring-after($image-path-3, "/exist/rest/db")
         else $image-path-3
     let $image-path-5 :=
-        if (starts-with($image-path-4, 'http://kjc-sv036.kjc.uni-heidelberg.de:8080/exist/apps/tamboti/modules/search/index.html?search-field=ID&amp;value='))
+        if (starts-with($image-path-4, 'http://kjc-sv016.kjc.uni-heidelberg.de:8080/exist/apps/tamboti/modules/search/index.html?search-field=ID&amp;value='))
         then
-            let $vra-work-id := substring-after($image-path-4, 'http://kjc-sv036.kjc.uni-heidelberg.de:8080/exist/apps/tamboti/modules/search/index.html?search-field=ID&amp;value=')
+            let $vra-work-id := substring-after($image-path-4, 'http://kjc-sv016.kjc.uni-heidelberg.de:8080/exist/apps/tamboti/modules/search/index.html?search-field=ID&amp;value=')
             let $vra-work := collection("/resources")//vra:work[@id = $vra-work-id]
             let $image-id := $vra-work//vra:relation[@type = 'imageIs']/@relids
             
@@ -234,8 +234,7 @@ declare function local:export-feed($feed-path, $target-parent-collection-path) {
         )    
 };
 
-(: let $feed-names := ("die_kunst_der_kunstkritik", "disobedient", "ethnografische_fotografie", "globalheroes", "materialvisualculture", "MethodinVMA", "photocultures", "popular_culture") :)
-let $feed-names := ("disobedient")
+let $feed-names := ("die_kunst_der_kunstkritik", "disobedient", "ethnografische_fotografie", "globalheroes", "materialvisualculture", "MethodinVMA", "photocultures", "popular_culture", "ziziphus-help") 
 let $login := xmldb:login("/db", "admin", "")
 
 return 
