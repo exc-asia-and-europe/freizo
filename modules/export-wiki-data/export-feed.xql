@@ -271,7 +271,7 @@ declare function local:export-feed($feed-path, $target-parent-collection-path) {
 };
 
 let $feed-names := ("die_kunst_der_kunstkritik", "disobedient", "ethnografische_fotografie", "globalheroes", "materialvisualculture", "MethodinVMA", "photocultures", "popular_culture", "ziziphus-help", "urban_anthropology") 
-let $login := xmldb:login("/db", "admin", "Wars4Spass2$s")
+let $login := xmldb:login("/db", "admin", "")
 
 return 
     for $feed-name in $feed-names
