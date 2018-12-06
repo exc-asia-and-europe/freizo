@@ -3,7 +3,7 @@ xquery version "3.0";
 import module namespace config = "http://exist-db.org/xquery/apps/config" at "/apps/wiki/modules/config.xqm";
 
 declare namespace html = "http://www.w3.org/1999/xhtml";
-declare namespace vra="http://www.vraweb.org/vracore4.htm";
+declare namespace vra = "http://www.vraweb.org/vracore4.htm";
 declare namespace atom="http://www.w3.org/2005/Atom";
 
 declare variable $base-collection-path := xs:anyURI("/apps/wiki/data/");
@@ -11,7 +11,34 @@ declare variable $tmp-parent-collection-path := "/apps/freizo/modules/export-wik
 declare variable $tmp-collection-name := "exported-feeds";
 declare variable $tmp-collection-path := $tmp-parent-collection-path || "/" || $tmp-collection-name;
 declare variable $images-collection-name := "_images";
-declare variable $image-extensions := ('jpg', 'tiff', 'png', 'jpeg', 'tif');
+declare variable $image-file-extensions := ("jpg", "tiff", "png", "jpeg", "tif");
+declare variable $html-file-extensions := ("html");
+declare variable $html-prefix := "html";
+declare variable $production-server-url := "http://kjc-sv036.kjc.uni-heidelberg.de:8080";
+
+declare function local:remove-prefixes($node as node()?, $prefixes as xs:string*) {
+    typeswitch ($node)
+    case element()
+        return
+            if ($prefixes = ('#all', prefix-from-QName(node-name($node))))
+            then
+                element {QName(namespace-uri($node), local-name($node))} {
+                    $node/@*,
+                    $node/node()/local:remove-prefixes(., $prefixes)
+                }
+            else
+                element {node-name($node)} {
+                    $node/@*,
+                    $node/node()/local:remove-prefixes(., $prefixes)
+                }
+    case document-node()
+        return
+            document {
+                $node/element()/local:remove-prefixes(., $prefixes)
+            }
+    default
+        return $node
+};
 
 declare function local:resolve-image-url($image-path-attr) {
     let $image-path-1 := replace($image-path-attr, "http://kjc-sv016.kjc.uni-heidelberg.de:8080/exist/apps/wiki", "/apps/wiki/data")
@@ -104,7 +131,7 @@ declare function local:copy-images($feed-path, $target-collection-path) {
     
     let $image-path-maps :=
         xmldb:get-child-resources($feed-path)[ends-with(., '.html')]
-        ! doc($feed-path || "/" || .)//html:img/@src[ends-with(lower-case(.), $image-extensions)]
+        ! doc($feed-path || "/" || .)//html:img/@src[ends-with(lower-case(.),  $image-file-extensions)]
         ! local:resolve-image-url(.)
     let $target-image-path-attrs := 
         xmldb:get-child-resources($target-collection-path)[ends-with(., '.html')]
@@ -148,24 +175,34 @@ declare function local:export-feed($feed-path, $target-parent-collection-path) {
     
     return
         (
-            (: copy resources :)
-            for $resource-name in $resource-names[not(ends-with(lower-case(.), $image-extensions))]
+            (: copy HTML resources :)
+            for $resource-name in $resource-names[ends-with(lower-case(.), $html-file-extensions)]
+            let $source-document := doc($feed-path || "/" || $resource-name)
+            let $processed-source-document := local:remove-prefixes($source-document, $html-prefix)
+            let $copy-document := xmldb:store($target-collection-path, $resource-name, $processed-source-document)
+            let $document := doc($target-collection-path || "/" || $resource-name)/*
             
-            return xmldb:copy($feed-path, $target-collection-path, $resource-name)
+            return $source-document
             ,
-            (: add titles to articles :)
+            (: add titles to articles and replace URLs in @src and @alt :)
             for $resource-name in $resource-names[ends-with(lower-case(.), '.html')]
+            let $document := doc($target-collection-path || "/" || $resource-name)/*
             let $title := $atom-files[.//atom:content/@src = $resource-name]/atom:title/string(.)
+            let $attributes := $document//html:img/(@src , @alt)
             
-            return update insert <html:h1>{$title}</html:h1> preceding doc($target-collection-path || "/" || $resource-name)/*/(element(), text())[1]
+            return (
+                update insert <h1 xmlns="http://www.w3.org/1999/xhtml">{$title}</h1> preceding $document/(element(), text())[1]
+                ,
+                $attributes ! (update value . with xmldb:decode(.))
+            )
             ,
             (: process html:a elements :)
             for $resource-name in $resource-names[ends-with(lower-case(.), '.html')]
-            let $elements := doc($target-collection-path || "/" || $resource-name)//html:a[@href]
+            let $a-elements := doc($target-collection-path || "/" || $resource-name)//html:a[@href]
             
             return
-                for $element in $elements
-                let $href-attr := $element/@href
+                for $a-element in $a-elements
+                let $href-attr := $a-element/@href
                 let $href-1 :=
                     if (starts-with($href-attr, '/exist/apps/wiki'))
                     then replace($href-attr, '/exist/apps/wiki/', '/exist/apps/wiki/data/') || '.html'
@@ -174,7 +211,7 @@ declare function local:export-feed($feed-path, $target-parent-collection-path) {
                 return ( 
                     update value $href-attr with $href-1
                     ,
-                    update insert attribute target {'_new'} into $element
+                    update insert attribute target {'_new'} into $a-element
                 )
             ,
             (: process gallery placeholders :)
@@ -186,7 +223,7 @@ declare function local:export-feed($feed-path, $target-parent-collection-path) {
                 let $gallery-id := $gallery-element/@id
                 let $gallery := collection($base-collection-path)//atom:feed[atom:id = $gallery-id][1]
                 let $gallery-images :=
-                    <html:div class="gallery">
+                    <div class="gallery">
                         {
                             for $entry in $gallery/atom:entry
                             let $image-url := $entry/atom:link/@href
@@ -194,12 +231,12 @@ declare function local:export-feed($feed-path, $target-parent-collection-path) {
                             let $content-title := collection($base-collection-path)//atom:entry[atom:id = $content-id]/atom:title/text()
                             
                             return
-                                <html:figure style="max-width:60%;">
-                                    <html:img style="max-width:100%;" src="{$image-url}" />
-                                    <html:figcaption>{$content-title}</html:figcaption>
-                                </html:figure>
+                                <figure xmlns="http://www.w3.org/1999/xhtml" style="max-width:60%;">
+                                    <img xmlns="http://www.w3.org/1999/xhtml" style="max-width:100%;" src="{$image-url}" />
+                                    <figcaption xmlns="http://www.w3.org/1999/xhtml">{$content-title}</figcaption>
+                                </figure>
                         }
-                    </html:div>
+                    </div>
                 
                 return update replace $gallery-element with $gallery-images
             ,
@@ -213,7 +250,7 @@ declare function local:export-feed($feed-path, $target-parent-collection-path) {
             let $gathered-image-names := xmldb:get-child-resources($images-collection-path)
             
             return
-                for $resource-name in $resource-names[ends-with(lower-case(.), $image-extensions)]
+                for $resource-name in $resource-names[ends-with(lower-case(.),  $image-file-extensions)]
                 
                 return
                     if (count(index-of($gathered-image-names, $resource-name)) = 0)
@@ -229,13 +266,12 @@ declare function local:export-feed($feed-path, $target-parent-collection-path) {
                 return
                     if ($collection-name = ('_galleries', '_theme'))
                     then xmldb:copy($feed-path || "/" || $collection-name, $target-collection-path)
-                    else
-                        local:export-feed($feed-path || "/" || $collection-name, $target-collection-path)
+                    else local:export-feed($feed-path || "/" || $collection-name, $target-collection-path)
         )    
 };
 
-let $feed-names := ("die_kunst_der_kunstkritik", "disobedient", "ethnografische_fotografie", "globalheroes", "materialvisualculture", "MethodinVMA", "photocultures", "popular_culture", "ziziphus-help") 
-let $login := xmldb:login("/db", "admin", "")
+let $feed-names := ("die_kunst_der_kunstkritik", "disobedient", "ethnografische_fotografie", "globalheroes", "materialvisualculture", "MethodinVMA", "photocultures", "popular_culture", "ziziphus-help", "urban_anthropology") 
+let $login := xmldb:login("/db", "admin", "Wars4Spass2$s")
 
 return 
     for $feed-name in $feed-names
