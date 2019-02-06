@@ -15,8 +15,8 @@ declare variable $image-file-extensions := ("jpg", "tiff", "png", "jpeg", "tif")
 declare variable $html-file-extensions := ("html");
 declare variable $html-prefix := "html";
 declare variable $production-server-url := "http://kjc-sv036.kjc.uni-heidelberg.de:8080";
-(: declare variable $feed-names := ("die_kunst_der_kunstkritik", "disobedient", "ethnografische_fotografie", "globalheroes", "materialvisualculture", "MethodinVMA", "photocultures", "popular_culture", "ziziphus-help", "urban_anthropology");  :)
-declare variable $feed-names := ("disobedient", "materialvisualculture", "popular_culture", "urban_anthropology"); 
+(: declare variable $feed-names := ("die_kunst_der_kunstkritik", "disobedient", "ethnografische_fotografie", "FramesMC4", "globalheroes", "help", "HERA_Single", "materialvisualculture", "McLuhan", "MethodinVMA", "neuenheimcastle", "pandora-help", "photocultures", "popular_culture", "testslide", "tutorial", "urban_anthropology", "urbanchristianities", "visual_and_media_anthropology", "WikiDokuTest", "ziziphus-help");  :)
+declare variable $feed-names := ("die_kunst_der_kunstkritik"); 
 
 declare function local:remove-prefixes($node as node()?, $prefixes as xs:string*) {
     typeswitch ($node)
@@ -114,14 +114,12 @@ declare function local:copy-image-from-url($feed-path, $images-collection-path, 
                 if (util:binary-doc-available($image-path))
                 then
                     let $image-name := util:document-name($image-path)
+                    let $processed-image-name := replace(xmldb:decode($image-name), " ", "_")
                     let $image-source-collection-path := util:collection-name($image-path)
-                    let $target-image-path := $images-collection-name || "/" || $image-name
+                    let $copy-image := xmldb:store($images-collection-path, $processed-image-name, util:binary-doc($image-path))
+                    let $target-image-path := $images-collection-name || "/" || $processed-image-name
                     
-                    return (
-                        xmldb:copy($image-source-collection-path, $images-collection-path, $image-name)
-                        ,
-                        $target-image-path
-                    )
+                    return $target-image-path
                 else $image-path
         }
         catch * {
@@ -129,7 +127,7 @@ declare function local:copy-image-from-url($feed-path, $images-collection-path, 
 (:            string-join(("Error for feed: ", $feed-path, ", with $image-path ", $image-path, " ", $err:description)):)
         }
         
-    return xmldb:decode($result)
+    return $result
 };
 
 declare function local:copy-images($feed-path, $target-collection-path) {
@@ -146,11 +144,11 @@ declare function local:copy-images($feed-path, $target-collection-path) {
         
         return
             (
-                $img-element/@src/data(.) || " = " || local:resolve-image-url($img-element/@src)
-                ,
                 update value $img-element/@src with $target-image-path
                 ,
                 update value $img-element/@alt with $target-image-path
+                ,
+                " $target-image-path = " || $target-image-path
         )
 };
 
@@ -204,7 +202,9 @@ declare function local:export-feed($feed-path, $target-parent-collection-path) {
             let $gallery-elements := $document//html:div[contains(@class, 'gallery-placeholder')]
             
             return (
-                update insert <h1 xmlns="http://www.w3.org/1999/xhtml">{$document-title}</h1> preceding $document//html:body/(element(), text())[1]
+                if ($document-title)
+                then update insert <h1 xmlns="http://www.w3.org/1999/xhtml">{$document-title}</h1> preceding $document//html:body/(element(), text())[1]
+                else ()
                 ,
                 for $a-element in $a-elements
                 let $href-attr := $a-element/@href
@@ -275,9 +275,6 @@ declare function local:export-feed($feed-path, $target-parent-collection-path) {
         )    
 };
 
-let $login := xmldb:login("/db", "admin", "")
+for $feed-name in $feed-names
 
-return 
-    for $feed-name in $feed-names
-    
-    return local:export-feed($base-collection-path || $feed-name, $tmp-collection-path)
+return local:export-feed($base-collection-path || $feed-name, $tmp-collection-path)

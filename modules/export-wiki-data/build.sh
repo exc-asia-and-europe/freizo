@@ -1,15 +1,34 @@
 #!/bin/sh
 
-rm -rf target/*
-cp -R source/. target/
+WORKING_DIR=/home/claudius/pdf
+SOURCE_DIR=$WORKING_DIR/source
+TARGET_DIR=$WORKING_DIR/target
 
-for path in $(find target $1 -name "*.html")
+if [ ! -z "$1" ]
+then
+SOURCE_DIR=$SOURCE_DIR/$1
+TARGET_DIR=$TARGET_DIR/$1
+fi
+
+rm -rf $TARGET_DIR/*
+echo "Removed the target files."
+cp -R $SOURCE_DIR/. $TARGET_DIR/
+echo "Copied the source files."
+
+for path in $(find $TARGET_DIR $1 -name "*.html")
 do
   echo -e "\033[92mProcessing ${path}\033[0m"
   wkhtmltopdf ${path} "${path%.html}.pdf"
 done
 
-find target/. -name "*.html" -type f -delete
-find target/. -name "_images" -type d -exec rm -Rf {} \;
-find target/. -name "_galleries" -type d -exec rm -Rf {} \;
+find $TARGET_DIR -name "*.html" -type f -delete
+echo "Deleted the .html files."
 
+find $TARGET_DIR -name "__contents__.xml" -type f -delete
+echo "Deleted the __contents__.xml files."
+
+find $TARGET_DIR -name "_images" -type d -exec rm -Rf {} \;
+echo "Deleted the _images directories."
+
+find $TARGET_DIR -name "_galleries" -type d -exec rm -Rf {} \;
+echo "Deleted the __galleries directories."
