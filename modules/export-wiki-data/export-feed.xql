@@ -14,29 +14,22 @@ declare variable $html-file-extensions := ("html");
 declare variable $html-prefix := "html";
 declare variable $production-server-url := "http://kjc-sv036.kjc.uni-heidelberg.de:8080";
 declare variable $data-collection := "/db/data";
-declare variable $missing-image-name := "missing image";
+declare variable $missing-image-name := "MISSING IMAGE";
 (: declare variable $feed-names := ("die_kunst_der_kunstkritik", "disobedient", "ethnografische_fotografie", "FramesMC4", "globalheroes", "help", "HERA_Single", "materialvisualculture", "McLuhan", "MethodinVMA", "neuenheimcastle", "pandora-help", "photocultures", "popular_culture", "testslide", "tutorial", "urban_anthropology", "urbanchristianities", "visual_and_media_anthropology", "WikiDokuTest", "ziziphus-help");  :)
-declare variable $feed-names := ("MethodinVMA"); 
+declare variable $feed-names := ("ziziphus-help"); 
 
-declare function local:remove-prefixes($node as node()?, $prefixes as xs:string*) {
+declare function local:remove-prefixes($node as node()?) {
     typeswitch ($node)
     case element()
         return
-            if ($prefixes = ('#all', prefix-from-QName(node-name($node))))
-            then
-                element {QName(namespace-uri($node), local-name($node))} {
-                    $node/@*,
-                    $node/node()/local:remove-prefixes(., $prefixes)
-                }
-            else
-                element {node-name($node)} {
-                    $node/@*,
-                    $node/node()/local:remove-prefixes(., $prefixes)
-                }
+            element {QName("http://www.w3.org/1999/xhtml", local-name($node))} {
+                $node/@*,
+                $node/node()/local:remove-prefixes(.)
+            }
     case document-node()
         return
             document {
-                $node/element()/local:remove-prefixes(., $prefixes)
+                $node/element()/local:remove-prefixes(.)
             }
     default
         return $node
@@ -51,17 +44,24 @@ declare function local:resolve-image-url($source-image-path) {
         if (contains($target-image-path, 'image-view.xql?uuid='))
         then
             let $image-uuid := substring-after($target-image-path, "uuid=")
-            let $image-vra := collection($data-collection)//vra:image[@id = $image-uuid][1]
-            let $image-collection-path := util:collection-name($image-vra)
-            let $image-file-name := $image-vra/@href
+            let $image-record := collection($data-collection)//vra:image[@id = $image-uuid][1]
             
             return
-                if (empty($image-vra))
-                then "_images/" || $image-uuid
+                if (empty($image-record))
+                then $missing-image-name
                 else
-                    if (starts-with($image-file-name, "hra-imageserver://"))
-                    then replace($image-file-name, "hra-imageserver", "http")
-                    else $image-collection-path || "/" || $image-file-name
+                    let $image-collection-path := util:collection-name($image-record)
+                    let $image-file-name := $image-record/@href
+                    let $image-file-name :=
+                        if (starts-with($image-file-name, "freizo-iiif-service://"))
+                        then replace($image-file-name, "freizo-iiif-service://", "")
+                        else $image-file-name
+                    let $image-file-name :=
+                        if (starts-with($image-file-name, "hra-imageserver://"))
+                        then replace($image-file-name, "hra-imageserver", "http")
+                        else $image-file-name
+                        
+                    return $image-collection-path || "/" || $image-file-name
         else $target-image-path
     let $target-image-path :=
         if (starts-with($target-image-path, 'http://kjc-sv036.kjc.uni-heidelberg.de:8080/exist/apps/tamboti/modules/search/index.html?search-field=ID&amp;value='))
@@ -69,17 +69,20 @@ declare function local:resolve-image-url($source-image-path) {
             let $vra-work-id := substring-after($target-image-path, 'http://kjc-sv036.kjc.uni-heidelberg.de:8080/exist/apps/tamboti/modules/search/index.html?search-field=ID&amp;value=')
             let $vra-work := collection($data-collection)//vra:work[@id = $vra-work-id]
             let $image-id := $vra-work//vra:relation[@type = 'imageIs']/@relids
+            let $image-record := collection($data-collection)//vra:image[@id = $image-id]
+            let $image-collection-path := util:collection-name($image-record)
+            let $image-file-name := $image-record/@href            
             
-            return collection($data-collection)//vra:image[@id = $image-id]/root()/document-uri(.)
+            return $image-collection-path || "/" || $image-file-name
         else $target-image-path
     let $target-image-path :=
-        if (not(starts-with($target-image-path, '/apps/wiki') or starts-with($target-image-path, '/db/resources') or starts-with($target-image-path, '/db/data') or starts-with($target-image-path, ("http", "_images/"))))
+        if (not(starts-with($target-image-path, '/apps/wiki') or starts-with($target-image-path, '/db/resources') or starts-with($target-image-path, '/db/data') or starts-with($target-image-path, ("http", "_images/")) or ($target-image-path = $missing-image-name)))
         then "/apps/wiki/data" || $target-image-path
         else $target-image-path      
-        
+       
     return $target-image-path
 };
-(:hra-imageserver://kjc-sv036/commons/Priya Paul Collection/t_metadata.f_preview.119689-118285-original.tif:)
+
 declare function local:copy-image-from-url($feed-path, $images-collection-path, $image-path) {
     let $result :=
         try {
@@ -140,6 +143,14 @@ declare function local:copy-images($feed-path, $target-collection-path) {
         for $img-element in $img-elements
         let $source-image-path := local:resolve-image-url($img-element/@src)
         let $target-image-path := local:copy-image-from-url($feed-path, $images-collection-path, $source-image-path)
+        let $target-image-path :=
+            if (ends-with($target-image-path, "tiff"))
+            then replace($target-image-path, "tiff", "png")
+            else $target-image-path
+        let $target-image-path :=
+            if (ends-with($target-image-path, "tif"))
+            then replace($target-image-path, "tif", "png")
+            else $target-image-path         
         
         return
             (
@@ -148,7 +159,10 @@ declare function local:copy-images($feed-path, $target-collection-path) {
                 update value $img-element/@alt with $target-image-path
                 ,
                 if ($target-image-path = $missing-image-name)
-                then update value $img-element/parent::*/html:figcaption with $missing-image-name
+                then 
+                    let $figcaption-element := $img-element/parent::*/*:figcaption
+                    
+                    return update replace $figcaption-element with <figcaption xmlns="http://www.w3.org/1999/xhtml">{($missing-image-name, " ", $figcaption-element/node())}</figcaption>
                 else ()
                 ,
                 $source-image-path || " = " || $target-image-path
@@ -180,7 +194,7 @@ declare function local:export-feed($feed-path, $target-parent-collection-path) {
             (: copy and process HTML resources :)
             for $resource-name in $resource-names[ends-with(lower-case(.), $html-file-extensions)]
             let $source-document := doc($feed-path || "/" || $resource-name)
-            let $processed-source-document := local:remove-prefixes($source-document, $html-prefix)
+            let $processed-source-document := local:remove-prefixes($source-document)
             let $processed-source-document := serialize(
                 <html xmlns="http://www.w3.org/1999/xhtml">
                 	<head>
@@ -240,7 +254,7 @@ declare function local:export-feed($feed-path, $target-parent-collection-path) {
                             return
                                 <figure xmlns="http://www.w3.org/1999/xhtml" style="max-width:60%;">
                                     <img xmlns="http://www.w3.org/1999/xhtml" style="max-width:100%;" src="{$image-url}" alt="{$image-url}" />
-                                    <figcaption xmlns="http://www.w3.org/1999/xhtml">{$content-title}</figcaption>
+                                    <figcaption>{$content-title}</figcaption>
                                 </figure>
                         }
                     </div>
