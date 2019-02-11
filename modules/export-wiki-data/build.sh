@@ -15,6 +15,12 @@ echo "Removed the target files."
 cp -R $SOURCE_DIR/. $TARGET_DIR/
 echo "Copied the source files."
 
+for path in $(find $TARGET_DIR $1 -name "*.tif")
+do
+  echo -e "\033[92mConverting ${path}\033[0m"
+  convert ${path} "${path%.tif}.png"
+done
+
 for path in $(find $TARGET_DIR $1 -name "*.html")
 do
   echo -e "\033[92mProcessing ${path}\033[0m"
