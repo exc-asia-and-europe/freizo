@@ -16,7 +16,7 @@ declare variable $production-server-url := "http://kjc-sv036.kjc.uni-heidelberg.
 declare variable $data-collection := "/db/data";
 declare variable $missing-image-name := "MISSING IMAGE";
 (: declare variable $feed-names := ("die_kunst_der_kunstkritik", "disobedient", "ethnografische_fotografie", "FramesMC4", "globalheroes", "help", "HERA_Single", "materialvisualculture", "McLuhan", "MethodinVMA", "neuenheimcastle", "pandora-help", "photocultures", "popular_culture", "testslide", "tutorial", "urban_anthropology", "urbanchristianities", "visual_and_media_anthropology", "WikiDokuTest", "ziziphus-help");  :)
-declare variable $feed-names := ("ziziphus-help"); 
+declare variable $feed-names := ("ethnografische_fotografie"); 
 
 declare function local:remove-prefixes($node as node()?) {
     typeswitch ($node)
@@ -248,13 +248,16 @@ declare function local:export-feed($feed-path, $target-parent-collection-path) {
                         {
                             for $entry in $gallery/atom:entry
                             let $image-url := local:resolve-image-url(normalize-space($entry/atom:link/@href[. != '']))
-                            let $content-id := $entry/atom:content/@src
-                            let $content-title := collection($base-collection-path)//atom:entry[atom:id = $content-id]/atom:title/text()
+                            let $figcaption-content-id := $entry/atom:content/@src
+                            let $figcaption-content-atom := collection($base-collection-path)//atom:entry[atom:id = $figcaption-content-id]
+                            let $figcaption-content-filename := $figcaption-content-atom/atom:content/@src
+                            let $figcaption-content-collection-path := util:collection-name($figcaption-content-atom)
+                            let $figcaption-content := local:remove-prefixes(doc($figcaption-content-collection-path || "/" || $figcaption-content-filename)/*)
                             
                             return
                                 <figure xmlns="http://www.w3.org/1999/xhtml" style="max-width:60%;">
                                     <img xmlns="http://www.w3.org/1999/xhtml" style="max-width:100%;" src="{$image-url}" alt="{$image-url}" />
-                                    <figcaption>{$content-title}</figcaption>
+                                    <figcaption>{$figcaption-content/*}</figcaption>
                                 </figure>
                         }
                     </div>
@@ -287,7 +290,7 @@ declare function local:export-feed($feed-path, $target-parent-collection-path) {
                 
                 return
                     if ($collection-name = ('_galleries', '_theme'))
-                    then () (: xmldb:copy($feed-path || "/" || $collection-name, $target-collection-path) :)
+                    then ()
                     else local:export-feed($feed-path || "/" || $collection-name, $target-collection-path)
         )    
 };
