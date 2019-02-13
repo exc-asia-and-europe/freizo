@@ -16,7 +16,7 @@ declare variable $production-server-url := "http://kjc-sv036.kjc.uni-heidelberg.
 declare variable $data-collection := "/db/data";
 declare variable $missing-image-name := "MISSING IMAGE";
 (: declare variable $feed-names := ("die_kunst_der_kunstkritik", "disobedient", "ethnografische_fotografie", "FramesMC4", "globalheroes", "help", "HERA_Single", "materialvisualculture", "McLuhan", "MethodinVMA", "neuenheimcastle", "pandora-help", "photocultures", "popular_culture", "testslide", "tutorial", "urban_anthropology", "urbanchristianities", "visual_and_media_anthropology", "WikiDokuTest", "ziziphus-help");  :)
-declare variable $feed-names := ("ethnografische_fotografie"); 
+declare variable $feed-names := ("ziziphus-help"); 
 
 declare function local:remove-prefixes($node as node()?) {
     typeswitch ($node)
